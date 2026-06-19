@@ -15,6 +15,10 @@ Collage and School management portal using Vue.js and Java JDBC (JPA and DTO), M
 - **Boilerplate Reduction:** Lombok
 
 ### Frontend
+
+<img width="1897" height="891" alt="image" src="https://github.com/user-attachments/assets/93d3882d-d27d-4a9d-b30e-0781dac82f1e" />
+
+
 - **Framework:** Vue 3
 - **Build Tool:** Vite
 - **Language:** TypeScript
@@ -109,4 +113,7 @@ Collage and School management portal using Vue.js and Java JDBC (JPA and DTO), M
 4. **Fees Tracking**: Logs student fees payment status.
 5. **Results / Academic Grades**: Record and view subject-wise results for students.
 6. **Staff Salary Management**: Track employee payroll and salaries.
+7. 
+
+<img width="1918" height="904" alt="image" src="https://github.com/user-attachments/assets/7793005e-d301-4696-b551-2fd776cb554e" />
 
