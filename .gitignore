@@ -1,0 +1,22 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+dist/
+dist-ssr/
+
+# Gradle dependencies & build output
+.gradle/
+build/
+bin/
+out/
+
+# IDE configurations
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Log files
+*.log
+logs/
