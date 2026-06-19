@@ -1,6 +1,6 @@
 # CMS-Portal: College and School Management Portal
 
-A robust, modern College and School Management System (SMS) built with a Spring Boot backend and a Vue.js 3 frontend. It handles core academic operations including student & staff registration, attendance/transport, grade/result publishing, fee payment status, and staff salary processing.
+Collage and School management portal using Vue.js and Java JDBC (JPA and DTO), MySQL.
 
 ---
 
@@ -9,7 +9,7 @@ A robust, modern College and School Management System (SMS) built with a Spring 
 ### Backend
 - **Core Language:** Java 17
 - **Framework:** Spring Boot 3.x / 4.x
-- **ORM & Data Access:** Spring Data JPA / Hibernate
+- **ORM & Data Access:** Spring Data JPA / Hibernate & JDBC (JPA and DTO patterns)
 - **Database:** MySQL
 - **Build System:** Gradle
 - **Boilerplate Reduction:** Lombok
@@ -109,3 +109,4 @@ A robust, modern College and School Management System (SMS) built with a Spring 
 4. **Fees Tracking**: Logs student fees payment status.
 5. **Results / Academic Grades**: Record and view subject-wise results for students.
 6. **Staff Salary Management**: Track employee payroll and salaries.
+
