@@ -16,15 +16,44 @@ public class Student {
     private String lastName;
     private String email;
     private String password;
+    private String clasName;
+    private String section;
+    private String gender;
 
     public Student() {}
 
-    public Student(Long id, String firstName, String lastName, String email, String password) {
+    public Student(Long id, String firstName, String lastName, String email, String password, String clasName, String section, String gender) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+        this.clasName = clasName;
+        this.section = section;
+        this.gender = gender;
+    }
+
+    public String getClasName() {
+        return clasName;
+    }
+
+    public void setClasName(String clasName) {
+        this.clasName = clasName;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public Long getId() {

@@ -31,10 +31,13 @@ public class SmsApplication {
                 Student student = new Student();
                 // '1L' explicitly defines the number literal 1 as a Long data type (64-bit)
                 student.setId(1L);
-                student.setFirstName("John");
-                student.setLastName("Doe");
-                student.setEmail("john.doe@example.com");
+                student.setFirstName("Admin");
+                student.setLastName("One");
+                student.setEmail("[EMAIL_ADDRESS]");
                 student.setPassword("password123");
+                student.setClasName("12");
+                student.setSection("A");
+                student.setGender("Male");
                 studentRepository.save(student);
             }
 

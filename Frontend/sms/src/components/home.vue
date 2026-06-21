@@ -405,10 +405,6 @@ const fetchSalary = async () => {
   }
 }
 
-// ==========================================
-// SALARY PORTAL FUNCTIONALITIES & COMPUTED STATE
-// ==========================================
-
 /**
  * Computed property to find the logged-in staff member's salary statement in the database.
  * It dynamically extracts the phone number from the logged-in user object (props.user)

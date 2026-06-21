@@ -93,7 +93,7 @@ const LoginHandling = async () => {
     isLoading.value = false
   }
 
-  if (role=='staff' && !email.value.includes('@teachers.com')) {
+  if (role.value === 'STAFF' && !email.value.includes('@teachers.com')) {
     errorMessage.value = 'Staff email must end with @teachers.com'
   }
 }

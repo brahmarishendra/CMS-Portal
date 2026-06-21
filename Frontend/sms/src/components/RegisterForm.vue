@@ -3,47 +3,41 @@ import { ref, computed } from 'vue'
 
 const emit = defineEmits(['switch-view', 'home'])
 
-// Form state
-const role = ref<'STUDENT' | 'STAFF'>('STUDENT') // Defaults to STUDENT
+const role = ref<'STUDENT' | 'STAFF'>('STUDENT')
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
 const phoneNumber = ref('')
 const password = ref('')
+// State for newly added Student columns (Class Name, Section, and Gender)
+const clasName = ref('')
+const section = ref('')
+const gender = ref('')
 
-// UI state
 const showPassword = ref(false)
 const isLoading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
-// Email regex validation
 const isEmailValid = computed(() => {
-  if (!email.value) return true // Don't show error while empty
+  if (!email.value) return true
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email.value)
 })
 
-// Toggle password visibility
 const togglePassword = () => {
   showPassword.value = !showPassword.value
 }
 
-// Set role
 const setRole = (newRole: 'STUDENT' | 'STAFF') => {
   role.value = newRole
-  // Clear error/success messages on toggle
   successMessage.value = ''
   errorMessage.value = ''
 }
 
-// Form submission handler
 const handleRegister = async () => {
-  // Reset previous messages
   successMessage.value = ''
   errorMessage.value = ''
-
-  // Client-side validations
   if (!firstName.value.trim() || !lastName.value.trim() || !email.value.trim() || !password.value.trim()) {
     errorMessage.value = 'Please fill out all required fields.'
     return
@@ -71,9 +65,16 @@ const handleRegister = async () => {
     }
   }
 
+  // Validation logic: Ensure the new Class, Section, and Gender fields are supplied for students
+  if (role.value === 'STUDENT') {
+    if (!clasName.value || !section.value || !gender.value) {
+      errorMessage.value = 'Class, Section, and Gender are required for students.'
+      return
+    }
+  }
+
   isLoading.value = true
 
-  // Build request payload according to AuthController.SignupRequest DTO
   const payload: Record<string, string> = {
     firstName: firstName.value.trim(),
     lastName: lastName.value.trim(),
@@ -84,6 +85,13 @@ const handleRegister = async () => {
 
   if (role.value === 'STAFF') {
     payload.phoneNumber = phoneNumber.value.trim()
+  }
+
+  // Payload structure logic: Map the new Student columns to matching SignupRequest fields
+  if (role.value === 'STUDENT') {
+    payload.clasName = clasName.value
+    payload.section = section.value
+    payload.gender = gender.value
   }
 
   try {
@@ -102,30 +110,29 @@ const handleRegister = async () => {
       successMessage.value = `Successfully registered as a ${role.value.toLowerCase()}!`
       try {
         const user = JSON.parse(responseText)
-        // Inject role and domainId so the user session state has consistent attributes
-        user.role = role.value
-        if (user.id) {
-          user.domainId = user.id
-        }
-        // Reset form fields
         firstName.value = ''
         lastName.value = ''
         email.value = ''
         phoneNumber.value = ''
         password.value = ''
-        // Navigate to home with user object
+        // Resetting new Student columns on successful registration logic
+        clasName.value = ''
+        section.value = ''
+        gender.value = ''
         emit('home', user)
       } catch (e) {
-        // Fallback if response is plain text instead of JSON
         firstName.value = ''
         lastName.value = ''
         email.value = ''
         phoneNumber.value = ''
         password.value = ''
+        // Resetting new Student columns on fallback registration path logic
+        clasName.value = ''
+        section.value = ''
+        gender.value = ''
         emit('home', { firstName: 'New', lastName: role.value, role: role.value })
       }
     } else {
-      // Backend validation error (e.g. email already in use)
       errorMessage.value = responseText || 'Registration failed. Please try again.'
     }
   } catch (error) {
@@ -290,7 +297,6 @@ const handleRegister = async () => {
             </span>
           </div>
 
-          <!-- Phone Number (Conditionally displayed for Staff only) -->
           <transition name="expand">
             <div v-if="role === 'STAFF'" class="form-group expand-wrapper">
               <label for="phoneNumber">Phone number</label>
@@ -302,6 +308,82 @@ const handleRegister = async () => {
                 required
                 :disabled="isLoading"
               />
+            </div>
+          </transition>
+
+          <!-- UI Fields for new Student columns: Class and Section -->
+          <transition name="expand">
+            <div v-if="role === 'STUDENT'" class="form-row-2 expand-wrapper">
+              <div class="form-group">
+                <label for="clasName">Class</label>
+                <div class="select-wrapper">
+                  <select 
+                    id="clasName" 
+                    v-model="clasName" 
+                    required
+                    :disabled="isLoading"
+                  >
+                    <option value="" disabled>Select Class</option>
+                    <option v-for="c in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']" :key="c" :value="c">
+                      Class {{ c }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="section">Section</label>
+                <div class="select-wrapper">
+                  <select 
+                    id="section" 
+                    v-model="section" 
+                    required
+                    :disabled="isLoading"
+                  >
+                    <option value="" disabled>Select Section</option>
+                    <option v-for="s in ['A', 'B', 'C', 'D']" :key="s" :value="s">
+                      Section {{ s }}
+                    </option>
+                  </select>
+                  <span class="select-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- UI Field for new Student column: Gender (Male / Female selection) -->
+          <transition name="expand">
+            <div v-if="role === 'STUDENT'" class="form-group expand-wrapper">
+              <label class="gender-label">Gender</label>
+              <div class="gender-selector">
+                <label class="gender-option" :class="{ active: gender === 'Male' }">
+                  <input type="radio" v-model="gender" value="Male" required :disabled="isLoading" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gender-icon">
+                    <circle cx="12" cy="10" r="4" />
+                    <line x1="12" y1="14" x2="12" y2="22" />
+                    <line x1="9" y1="18" x2="15" y2="18" />
+                  </svg>
+                  <span>Male</span>
+                </label>
+                <label class="gender-option" :class="{ active: gender === 'Female' }">
+                  <input type="radio" v-model="gender" value="Female" required :disabled="isLoading" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gender-icon">
+                    <circle cx="12" cy="8" r="4" />
+                    <line x1="12" y1="12" x2="12" y2="20" />
+                    <line x1="12" y1="20" x2="12" y2="21" />
+                    <line x1="9" y1="17" x2="15" y2="17" />
+                  </svg>
+                  <span>Female</span>
+                </label>
+              </div>
             </div>
           </transition>
 
@@ -895,5 +977,105 @@ input.input-invalid {
 
 .expand-wrapper {
   transform-origin: top;
+}
+
+/* Styling for new Student columns (Class and Section dropdown selectors) */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+select {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 40px; /* Make space for custom arrow */
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  appearance: none; /* Hide default arrow */
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-focus);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 14px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow-svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Styling for new Student column: Gender selection buttons (hover/active states) */
+.gender-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.gender-selector {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.gender-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background-color: var(--bg-card);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.gender-option:hover {
+  background-color: var(--bg-app);
+  border-color: var(--border-focus);
+  color: var(--primary);
+}
+
+.gender-option.active {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-focus);
+}
+
+.gender-option input[type="radio"] {
+  display: none; /* Hide default radio input style */
+}
+
+.gender-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 </style>

@@ -71,6 +71,9 @@ public class AuthController {
                 student.setLastName(request.getLastName());
                 student.setEmail(request.getEmail());
                 student.setPassword(request.getPassword());
+                student.setClasName(request.getClasName());
+                student.setSection(request.getSection());
+                student.setGender(request.getGender());
 
                 Student registeredStudent = studentService.registerStudent(student);
                 return ResponseEntity.status(HttpStatus.CREATED).body(registeredStudent);

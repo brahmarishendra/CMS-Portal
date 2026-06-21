@@ -11,6 +11,9 @@ public class SignupRequest {
     private String phoneNumber; // Used primarily by Staff
     private String password;
     private String role; // Expecting "STUDENT", "STAFF", or "STUFF"
+    private String clasName;
+    private String section;
+    private String gender;
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -29,4 +32,13 @@ public class SignupRequest {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    
+    public String getClasName() { return clasName; }
+    public void setClasName(String clasName) { this.clasName = clasName; }
+    
+    public String getSection() { return section; }
+    public void setSection(String section) { this.section = section; }
+    
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 }
