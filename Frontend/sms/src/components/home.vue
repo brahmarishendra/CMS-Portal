@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Phone } from 'lucide-react'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
   user: {
@@ -38,8 +38,16 @@ const username = computed(() => {
   return `${first} ${last}`.trim()
 })
 
+/*
 const message = computed(() => {
   return username.value ? `Welcome back, ${username.value}!` : "Welcome!"
+})
+*/
+
+// Compute student ID matching domainId, userId, or id
+const studentDisplayId = computed(() => {
+  if (!props.user) return ''
+  return props.user.domainId || props.user.userId || props.user.id || ''
 })
 
 
@@ -355,6 +363,230 @@ const submitFeesForm = async () => {
   }
 }
 
+// Profile details state & form fields
+const Staff_profile_edit = ref(false)
+const Student_profile_edit = ref(false)
+const isSubmittingProfile = ref(false)
+const profileModalError = ref('')
+const profileFeedback = ref('')
+const profileFeedbackType = ref<'success' | 'error'>('success')
+
+const profileFeedbackClass = computed(() => {
+  return profileFeedbackType.value === 'success' ? 'feedback-success' : 'feedback-error'
+})
+
+const formFirstName = ref('')
+const formLastName = ref('')
+const formEmail = ref('')
+const formPhone = ref('')
+const formAddress = ref('')
+const formCity = ref('')
+const formState = ref('')
+const formZipCode = ref('')
+const formCountry = ref('')
+const formClasName = ref('')
+const formSection = ref('')
+const formGender = ref('')
+
+const formatProfileImage = (img: any) => {
+  if (!img || typeof img !== 'string') return ''
+  let trimmed = img.trim()
+  if (!trimmed) return ''
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    trimmed = trimmed.slice(1, -1).trim()
+  }
+  if (!trimmed) return ''
+  if (trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed
+  }
+  if (trimmed.startsWith('/') && !trimmed.startsWith('/9j/')) {
+    return trimmed
+  }
+  return `data:image/jpeg;base64,${trimmed}`
+}
+
+const profileImageUrl = ref(formatProfileImage(props.user?.profileImage || props.user?.imageUrl || ''))
+const isUploadingImage = ref(false)
+
+const formattedProfileImage = computed(() => formatProfileImage(profileImageUrl.value))
+
+const fetchProfileImage = async () => {
+  const identifier = props.user?.email || props.user?.emailId || props.user?.domainId || props.user?.id || props.user?.userId
+  if (!identifier) return
+  try {
+    const res = await fetch(`/api/profile/get-image/${encodeURIComponent(identifier)}`)
+    if (res.ok) {
+      const imgData = await res.text()
+      if (imgData && imgData.trim()) {
+        const formatted = formatProfileImage(imgData)
+        profileImageUrl.value = formatted
+        if (props.user) props.user.profileImage = formatted
+      }
+    }
+  } catch (e) {
+    console.error('Error fetching database profile image:', e)
+  }
+}
+
+watch(() => props.user, () => {
+  if (props.user?.profileImage) {
+    const formatted = formatProfileImage(props.user.profileImage)
+    props.user.profileImage = formatted
+    profileImageUrl.value = formatted
+  }
+  fetchProfileImage()
+}, { immediate: true })
+
+onMounted(() => {
+  fetchProfileImage()
+})
+
+const openProfileModal = () => {
+  profileModalError.value = ''
+  if (props.user) {
+    let first = props.user.firstName || ''
+    let last = props.user.lastName || ''
+    if (!first && props.user.username) {
+      const parts = props.user.username.trim().split(' ')
+      first = parts[0] || ''
+      last = parts.slice(1).join(' ') || ''
+    }
+    formFirstName.value = first
+    formLastName.value = last
+    formEmail.value = props.user.email || props.user.emailId || ''
+    formPhone.value = props.user.phoneNumber || props.user.phone || ''
+    formAddress.value = props.user.address || ''
+    formCity.value = props.user.city || ''
+    formState.value = props.user.state || ''
+    formZipCode.value = props.user.zipCode || ''
+    formCountry.value = props.user.country || ''
+    formClasName.value = props.user.clasName || 'Grade 10'
+    formSection.value = props.user.section || 'A'
+    formGender.value = props.user.gender || 'Male'
+    profileImageUrl.value = formatProfileImage(props.user.profileImage || props.user.imageUrl || '')
+  }
+  if (role.value === 'STAFF') {
+    Staff_profile_edit.value = true
+  } else {
+    Student_profile_edit.value = true
+  }
+}
+
+// Function to upload profile image
+const uploadprofile = async (file: File) => {
+  if (!file) return
+  console.log('Uploading:', file.name)
+  isUploadingImage.value = true
+
+  try {
+    const payload = new FormData()
+    payload.append('file', file)
+    const uId = (props.user?.email || props.user?.emailId || props.user?.domainId || props.user?.id || props.user?.userId || '1').toString()
+    payload.append('userId', uId)
+
+    const response = await fetch('/api/profile/upload-image', {
+      method: 'POST',
+      body: payload
+    })
+
+    if (response.ok) {
+      const data = await response.text()
+      console.log('Image upload success:', data)
+      const formatted = formatProfileImage(data)
+      profileImageUrl.value = formatted
+      if (props.user) {
+        props.user.profileImage = formatted
+        try {
+          localStorage.setItem('sms_user', JSON.stringify(props.user))
+        } catch (storageErr) {
+          console.warn('LocalStorage quota exceeded for image cache, image remains saved in PostgreSQL DB.')
+        }
+      }
+    } else {
+      const errText = await response.text()
+      console.error('Error uploading image:', errText)
+      profileModalError.value = errText || 'Failed to upload image.'
+    }
+  } catch (err) {
+    console.error('Connection error uploading image:', err)
+    profileModalError.value = 'Connection error: Unable to upload image.'
+  } finally {
+    isUploadingImage.value = false
+  }
+}
+
+const onFileSelected = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    uploadprofile(target.files[0])
+  }
+}
+
+const closeProfileModal = () => {
+  Staff_profile_edit.value = false
+  Student_profile_edit.value = false
+  profileModalError.value = ''
+}
+
+const submitProfileForm = async () => {
+  profileModalError.value = ''
+  isSubmittingProfile.value = true
+
+  try {
+    const isStaff = role.value === 'STAFF'
+    const url = isStaff ? '/api/profile/staff/update' : '/api/profile/student/update'
+    
+    const payload: any = {
+      id: props.user?.id || props.user?.domainId || props.user?.userId,
+      firstName: formFirstName.value,
+      lastName: formLastName.value,
+      email: formEmail.value,
+      password: props.user?.password || '123456'
+    }
+
+    if (isStaff) {
+      payload.phoneNumber = formPhone.value
+      payload.address = formAddress.value
+    } else {
+      payload.clasName = formClasName.value
+      payload.section = formSection.value
+      payload.gender = formGender.value
+    }
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (response.ok) {
+      const updatedData = await response.json()
+      if (props.user) {
+        Object.assign(props.user, updatedData)
+        props.user.firstName = formFirstName.value
+        props.user.lastName = formLastName.value
+        props.user.username = `${formFirstName.value} ${formLastName.value}`.trim()
+        localStorage.setItem('sms_user', JSON.stringify(props.user))
+      }
+      profileFeedback.value = 'Profile updated successfully!'
+      profileFeedbackType.value = 'success'
+      closeProfileModal()
+    } else {
+      const errText = await response.text()
+      profileModalError.value = errText || 'Failed to update profile.'
+    }
+  } catch (err) {
+    profileModalError.value = 'Connection error: Unable to update profile.'
+    console.error('Submit profile error:', err)
+  } finally {
+    isSubmittingProfile.value = false
+  }
+}
+
+
 // Salary Management State
 const salaryList = ref<any[]>([])
 const isSalaryLoading = ref(false)
@@ -488,15 +720,25 @@ watch(() => props.user, (newUser) => {
       <!-- User profile menu -->
       <div class="nav-right">
         <div class="user-pill">
-          <div class="user-avatar">
-            {{ username?.charAt(0).toUpperCase() }}
+          <div class="user-avatar" style="cursor: pointer; overflow: hidden;" @click="openProfileModal">
+            <img v-if="formattedProfileImage" :src="formattedProfileImage" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+            <span v-else>{{ username?.charAt(0).toUpperCase() }}</span>
           </div>
           <div class="user-meta">
             <span class="user-fullname">{{ username }}</span>
             <span class="user-role-badge" :class="role?.toLowerCase()">{{ role }}</span>
           </div>
         </div>
-        
+        <button class="logout-btn" @click="openProfileModal" style="margin-right: 8px; background-color: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-focus);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Profile
+        </button>
+
+
+
         <button class="logout-btn" @click="emit('home')">
           <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -510,15 +752,102 @@ watch(() => props.user, (newUser) => {
 
     <!-- Main Workspace Content -->
     <div class="workspace-area">
+      <!-- Profile Update Alert -->
+      <transition name="slide-fade">
+        <div v-if="profileFeedback" class="results-alert" :class="profileFeedbackClass" style="margin-bottom: 20px;">
+          {{ profileFeedback }}
+        </div>
+      </transition>
 
       <!-- TAB 1: WELCOME DASHBOARD -->
       <main v-if="currentTab === 'dashboard'" class="dashboard-content">
+
+        <!--
         <h1 class="welcome-message">{{ message }}</h1>
-        <p class="welcome-subtitle" style="margin-bottom: 30px;">
-          Welcome to your School Management System dashboard portal.<b v-if="role === 'STUDENT'"> Your Id is {{ props.user?.id }} </b>. Start by choosing a section from the navigation bar above to manage your academic profile records.
+        <p class="welcome-subtitle" style="margin-bottom: 24px;">
+          Welcome to your School Management System dashboard portal.<b v-if="role === 'STUDENT' && studentDisplayId"> Your Id is {{ studentDisplayId }}. </b>Start by choosing a section from the navigation bar above to manage your academic profile records.
         </p>
+        -->
 
+        <!-- Reference Modern Profile Card (4px radius, no shadow) -->
+        <div class="ref-profile-card">
+          <div class="ref-card-banner"></div>
+          <div class="ref-card-content">
+            <div class="ref-avatar-wrapper">
+              <div class="ref-avatar" style="cursor: pointer; overflow: hidden;" @click="openProfileModal" title="Edit Profile & Photo">
+                <img v-if="formattedProfileImage" :src="formattedProfileImage" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+                <span v-else>{{ username?.charAt(0).toUpperCase() || 'U' }}</span>
+              </div>
+            </div>
 
+            <div class="ref-info-header">
+              <div class="ref-user-details">
+                <h2 class="ref-user-name">{{ username || 'User Profile' }}</h2>
+                <span class="ref-user-handle">@{{ (username || 'user').toLowerCase().replace(/\s+/g, '_') }} • {{ role }}</span>
+              </div>
+              <div class="ref-action-group">
+                <button class="ref-pill-btn" @click="openProfileModal">Edit Profile</button>
+                <button class="ref-icon-btn" @click="openProfileModal" title="Edit Profile">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <hr class="ref-card-divider" />
+
+            <div class="ref-stats-row">
+              <div class="ref-stat-item">
+                <div class="ref-stat-val">
+                  <svg class="ref-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  <span>{{ studentDisplayId || 'N/A' }}</span>
+                </div>
+                <span class="ref-stat-label">System ID</span>
+              </div>
+
+              <div class="ref-stat-item">
+                <div class="ref-stat-val">
+                  <svg class="ref-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span>{{ resultsList.length || '0' }}</span>
+                </div>
+                <span class="ref-stat-label">Records</span>
+              </div>
+
+              <div class="ref-stat-item">
+                <div class="ref-stat-val">
+                  <svg class="ref-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <span>Active</span>
+                </div>
+                <span class="ref-stat-label">Status</span>
+              </div>
+            </div>
+
+            <button class="ref-bottom-btn" @click="currentTab = 'results'">
+              <span class="ref-btn-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px; height:14px;">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </span>
+              <span class="ref-btn-text">View Academic Reports</span>
+            </button>
+          </div>
+        </div>
       </main>
 
       <!-- TAB 2: RESULTS SECTION -->
@@ -1097,7 +1426,183 @@ watch(() => props.user, (newUser) => {
           </div>
         </div>
       </main>
-    </div>
+
+    <!-- Student Profile Edit Modal -->
+    <transition name="modal-fade">
+      <div v-if="Student_profile_edit" class="modal-backdrop" @click.self="closeProfileModal">
+        <div class="modal-content">
+          <div class="modal-header-bar">
+            <h3>Edit Student Profile</h3>
+            <button class="close-modal-btn" @click="closeProfileModal">&times;</button>
+          </div>
+          <form @submit.prevent="submitProfileForm" class="modal-form">
+            <div v-if="profileModalError" class="modal-error-banner">{{ profileModalError }}</div>
+            <div class="form-field" style="margin-bottom: 16px;">
+              <label>Profile Picture</label>
+              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; border: 2px solid var(--primary); flex-shrink: 0;">
+                  <img v-if="formattedProfileImage" :src="formattedProfileImage" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <span v-else>{{ formFirstName?.charAt(0).toUpperCase() || 'U' }}</span>
+                </div>
+                <input type="file" accept="image/*" @change="onFileSelected" :disabled="isSubmittingProfile || isUploadingImage" style="font-size: 13px; color: var(--text-primary);" />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-field">
+                <label for="studentFirstName">First Name</label>
+                <input 
+                  id="studentFirstName" 
+                  v-model="formFirstName" 
+                  type="text" 
+                  placeholder="e.g. John" 
+                  required
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+              <div class="form-field">
+                <label for="studentLastName">Last Name</label>
+                <input 
+                  id="studentLastName" 
+                  v-model="formLastName" 
+                  type="text" 
+                  placeholder="e.g. Doe" 
+                  required
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="studentEmail">Email Address</label>
+              <input 
+                id="studentEmail" 
+                v-model="formEmail" 
+                type="email" 
+                placeholder="e.g. student@school.com" 
+                required
+                :disabled="isSubmittingProfile"
+              />
+            </div>
+            <div class="form-row-2">
+              <div class="form-field">
+                <label for="studentClass">Class Name</label>
+                <input 
+                  id="studentClass" 
+                  v-model="formClasName" 
+                  type="text" 
+                  placeholder="e.g. Grade 10" 
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+              <div class="form-field">
+                <label for="studentSection">Section</label>
+                <input 
+                  id="studentSection" 
+                  v-model="formSection" 
+                  type="text" 
+                  placeholder="e.g. A" 
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+            </div>
+            <div class="modal-action-bar">
+              <button type="button" class="btn-secondary-action" @click="closeProfileModal" :disabled="isSubmittingProfile">Cancel</button>
+              <button type="submit" class="btn-primary-action" :disabled="isSubmittingProfile">
+                <span v-if="isSubmittingProfile" class="form-spinner"></span>
+                <span v-else>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Staff Profile Edit Modal -->
+    <transition name="modal-fade">
+      <div v-if="Staff_profile_edit" class="modal-backdrop" @click.self="closeProfileModal">
+        <div class="modal-content">
+          <div class="modal-header-bar">
+            <h3>Edit Staff Profile</h3>
+            <button class="close-modal-btn" @click="closeProfileModal">&times;</button>
+          </div>
+          <form @submit.prevent="submitProfileForm" class="modal-form">
+            <div v-if="profileModalError" class="modal-error-banner">{{ profileModalError }}</div>
+            <div class="form-field" style="margin-bottom: 16px;">
+              <label>Profile Picture</label>
+              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; border: 2px solid var(--primary); flex-shrink: 0;">
+                  <img v-if="formattedProfileImage" :src="formattedProfileImage" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <span v-else>{{ formFirstName?.charAt(0).toUpperCase() || 'U' }}</span>
+                </div>
+                <input type="file" accept="image/*" @change="onFileSelected" :disabled="isSubmittingProfile || isUploadingImage" style="font-size: 13px; color: var(--text-primary);" />
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-field">
+                <label for="staffFirstName">First Name</label>
+                <input 
+                  id="staffFirstName" 
+                  v-model="formFirstName" 
+                  type="text" 
+                  placeholder="e.g. Jane" 
+                  required
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+              <div class="form-field">
+                <label for="staffLastName">Last Name</label>
+                <input 
+                  id="staffLastName" 
+                  v-model="formLastName" 
+                  type="text" 
+                  placeholder="e.g. Smith" 
+                  required
+                  :disabled="isSubmittingProfile"
+                />
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="staffEmail">Email Address</label>
+              <input 
+                id="staffEmail" 
+                v-model="formEmail" 
+                type="email" 
+                placeholder="e.g. staff@school.com" 
+                required
+                :disabled="isSubmittingProfile"
+              />
+            </div>
+            <div class="form-field">
+              <label for="staffPhone">Phone Number</label>
+              <input 
+                id="staffPhone" 
+                v-model="formPhone" 
+                type="text" 
+                placeholder="e.g. 9876543210" 
+                :disabled="isSubmittingProfile"
+              />
+            </div>
+            <div class="form-field">
+              <label for="staffAddress">Address</label>
+              <input 
+                id="staffAddress" 
+                v-model="formAddress" 
+                type="text" 
+                placeholder="e.g. 123 Main St" 
+                :disabled="isSubmittingProfile"
+              />
+            </div>
+            <div class="modal-action-bar">
+              <button type="button" class="btn-secondary-action" @click="closeProfileModal" :disabled="isSubmittingProfile">Cancel</button>
+              <button type="submit" class="btn-primary-action" :disabled="isSubmittingProfile">
+                <span v-if="isSubmittingProfile" class="form-spinner"></span>
+                <span v-else>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
+  </div>
   </div>
 </template>
 
@@ -2003,5 +2508,193 @@ watch(() => props.user, (newUser) => {
   display: flex;
   justify-content: center;
   width: 100%;
+}
+
+/* Reference Modern Profile Card Styling */
+.ref-profile-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: #ffffff;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.ref-card-banner {
+  height: 120px;
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  position: relative;
+}
+
+.ref-card-content {
+  padding: 0 24px 24px 24px;
+  position: relative;
+}
+
+.ref-avatar-wrapper {
+  margin-top: -40px;
+  margin-bottom: 14px;
+  display: inline-block;
+}
+
+.ref-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  border: 4px solid #ffffff;
+}
+
+.ref-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ref-user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.ref-user-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ref-user-handle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.ref-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ref-pill-btn {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.ref-pill-btn:hover {
+  opacity: 0.9;
+}
+
+.ref-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ref-icon-btn:hover {
+  background-color: #f8fafc;
+}
+
+.ref-card-divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 20px 0;
+}
+
+.ref-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.ref-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ref-stat-val {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ref-stat-icon {
+  width: 16px;
+  height: 16px;
+  color: #0f172a;
+}
+
+.ref-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.ref-bottom-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.ref-bottom-btn:hover {
+  opacity: 0.95;
+}
+
+.ref-btn-arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ref-btn-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
 }
 </style>

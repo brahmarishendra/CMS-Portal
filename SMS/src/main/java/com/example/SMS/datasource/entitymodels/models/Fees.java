@@ -103,7 +103,14 @@ public class Fees {
     }
 
     public BigDecimal getDueAmount() {
-        return dueAmount;
+        if (dueAmount != null) {
+            return dueAmount;
+        }
+        if (totalAmount != null) {
+            BigDecimal paid = paidAmount != null ? paidAmount : BigDecimal.ZERO;
+            return totalAmount.subtract(paid);
+        }
+        return BigDecimal.ZERO;
     }
 
     public void setDueAmount(BigDecimal dueAmount) {

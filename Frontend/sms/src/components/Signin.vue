@@ -83,6 +83,8 @@ const LoginHandling = async () => {
         password.value = ''
         emit('home', { firstName: 'Authenticated', lastName: role.value })
       }
+    } else if (response.status === 502) {
+      errorMessage.value = 'Backend server is offline (502 Bad Gateway). Please start the Spring Boot backend service.'
     } else {
       errorMessage.value = responseText || 'Sign in failed. Please check your credentials.'
     }

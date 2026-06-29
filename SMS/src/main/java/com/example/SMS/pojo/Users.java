@@ -34,6 +34,9 @@ public class Users {
     @Transient
     private Long domainId;
 
+    @Transient
+    private String profileImage;
+
     public Users() {}
 
     public Users(String emailId, String passwordHash) {
@@ -115,5 +118,13 @@ public class Users {
 
     public void setDomainId(Long domainId) {
         this.domainId = domainId;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 }

@@ -116,6 +116,9 @@ public class UsersController {
                     dbUser.setRole("STAFF");
                     dbUser.setPhoneNumber(staff.getPhoneNumber());
                     dbUser.setDomainId(staff.getId());
+                    if (staff.getProfileImage() != null && staff.getProfileImage().length > 0) {
+                        dbUser.setProfileImage("data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(staff.getProfileImage()));
+                    }
                     return ResponseEntity.ok(dbUser);
                 } else {
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Staff member does not have a registered phone number!");
@@ -131,11 +134,17 @@ public class UsersController {
                 dbUser.setUsername(fullName.trim().isEmpty() ? "Student" : fullName.trim());
                 dbUser.setRole("STUDENT");
                 dbUser.setDomainId(student.getId());
+                if (student.getProfileImage() != null && student.getProfileImage().length > 0) {
+                    dbUser.setProfileImage("data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(student.getProfileImage()));
+                }
                 return ResponseEntity.ok(dbUser);
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password for Student role!");
         } else {
-            // Default fallback if no role is specified
+
+            // Default fallback for frontend update user data with domainId
+            // to fetch user data with domainId
+
             Optional<Student> studentOpt = studentRepository.findByEmail(email);
             if (studentOpt.isPresent()) {
                 Student student = studentOpt.get();
@@ -144,6 +153,9 @@ public class UsersController {
                 dbUser.setUsername(fullName.trim().isEmpty() ? "Student" : fullName.trim());
                 dbUser.setRole("STUDENT");
                 dbUser.setDomainId(student.getId());
+                if (student.getProfileImage() != null && student.getProfileImage().length > 0) {
+                    dbUser.setProfileImage("data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(student.getProfileImage()));
+                }
                 return ResponseEntity.ok(dbUser);
             }
             Optional<Staff> staffOpt = staffRepository.findByEmail(email);
@@ -156,6 +168,9 @@ public class UsersController {
                     dbUser.setRole("STAFF");
                     dbUser.setPhoneNumber(staff.getPhoneNumber());
                     dbUser.setDomainId(staff.getId());
+                    if (staff.getProfileImage() != null && staff.getProfileImage().length > 0) {
+                        dbUser.setProfileImage("data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(staff.getProfileImage()));
+                    }
                     return ResponseEntity.ok(dbUser);
                 }
             }

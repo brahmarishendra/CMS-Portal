@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 /**
  * Unified AuthController for handling generic Login and Signup endpoints.
@@ -61,6 +62,12 @@ public class AuthController {
                 staff.setEmail(request.getEmail());
                 staff.setPhoneNumber(request.getPhoneNumber());
                 staff.setPassword(request.getPassword());
+                staff.setAddress(request.getAddress());
+                staff.setAlternativePhoneNumber(request.getAlternativePhoneNumber());
+                staff.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : "System");
+                staff.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : "System");
+                staff.setCreatedAt(request.getCreatedAt() != null ? request.getCreatedAt() : LocalDateTime.now());
+                staff.setUpdatedAt(request.getUpdatedAt() != null ? request.getUpdatedAt() : LocalDateTime.now());
 
                 Staff registeredStaff = staffService.registerStaff(staff);
                 return ResponseEntity.status(HttpStatus.CREATED).body(registeredStaff);
@@ -74,6 +81,10 @@ public class AuthController {
                 student.setClasName(request.getClasName());
                 student.setSection(request.getSection());
                 student.setGender(request.getGender());
+                student.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : "System");
+                student.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : "System");
+                student.setCreatedAt(request.getCreatedAt() != null ? request.getCreatedAt() : LocalDateTime.now());
+                student.setUpdatedAt(request.getUpdatedAt() != null ? request.getUpdatedAt() : LocalDateTime.now());
 
                 Student registeredStudent = studentService.registerStudent(student);
                 return ResponseEntity.status(HttpStatus.CREATED).body(registeredStudent);

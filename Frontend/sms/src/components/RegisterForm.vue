@@ -8,6 +8,8 @@ const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
 const phoneNumber = ref('')
+const alternativePhoneNumber = ref('')
+const address = ref('')
 const password = ref('')
 // State for newly added Student columns (Class Name, Section, and Gender)
 const clasName = ref('')
@@ -63,6 +65,17 @@ const handleRegister = async () => {
       errorMessage.value = 'Phone number must be exactly 10 digits long.'
       return
     }
+    if (alternativePhoneNumber.value.trim()) {
+      const cleanedAltPhone = alternativePhoneNumber.value.trim().replace(/\D/g, '')
+      if (cleanedAltPhone.length !== 10) {
+        errorMessage.value = 'Alternative phone number must be exactly 10 digits long.'
+        return
+      }
+    }
+    if (!address.value.trim()) {
+      errorMessage.value = 'Address is required for staff registration.'
+      return
+    }
   }
 
   // Validation logic: Ensure the new Class, Section, and Gender fields are supplied for students
@@ -75,16 +88,26 @@ const handleRegister = async () => {
 
   isLoading.value = true
 
+  const now = new Date()
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const formattedDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+
   const payload: Record<string, string> = {
     firstName: firstName.value.trim(),
     lastName: lastName.value.trim(),
     email: email.value.trim(),
     password: password.value,
-    role: role.value
+    role: role.value,
+    createdBy: 'System',
+    updatedBy: 'System',
+    createdAt: formattedDate,
+    updatedAt: formattedDate
   }
 
   if (role.value === 'STAFF') {
     payload.phoneNumber = phoneNumber.value.trim()
+    payload.alternativePhoneNumber = alternativePhoneNumber.value.trim()
+    payload.address = address.value.trim()
   }
 
   // Payload structure logic: Map the new Student columns to matching SignupRequest fields
@@ -114,6 +137,8 @@ const handleRegister = async () => {
         lastName.value = ''
         email.value = ''
         phoneNumber.value = ''
+        alternativePhoneNumber.value = ''
+        address.value = ''
         password.value = ''
         // Resetting new Student columns on successful registration logic
         clasName.value = ''
@@ -125,6 +150,8 @@ const handleRegister = async () => {
         lastName.value = ''
         email.value = ''
         phoneNumber.value = ''
+        alternativePhoneNumber.value = ''
+        address.value = ''
         password.value = ''
         // Resetting new Student columns on fallback registration path logic
         clasName.value = ''
@@ -132,6 +159,8 @@ const handleRegister = async () => {
         gender.value = ''
         emit('home', { firstName: 'New', lastName: role.value, role: role.value })
       }
+    } else if (response.status === 502) {
+      errorMessage.value = 'Backend server is offline (502 Bad Gateway). Please start the Spring Boot backend service.'
     } else {
       errorMessage.value = responseText || 'Registration failed. Please try again.'
     }
@@ -298,16 +327,41 @@ const handleRegister = async () => {
           </div>
 
           <transition name="expand">
-            <div v-if="role === 'STAFF'" class="form-group expand-wrapper">
-              <label for="phoneNumber">Phone number</label>
-              <input 
-                id="phoneNumber" 
-                v-model="phoneNumber" 
-                type="tel" 
-                placeholder="e.g. +919876543210`"
-                required
-                :disabled="isLoading"
-              />
+            <div v-if="role === 'STAFF'" class="expand-wrapper staff-fields-container">
+              <div class="form-group">
+                <label for="phoneNumber">Phone number</label>
+                <input 
+                  id="phoneNumber" 
+                  v-model="phoneNumber" 
+                  type="tel" 
+                  placeholder="e.g. 9876543210"
+                  required
+                  :disabled="isLoading"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="alternativePhoneNumber">Alternative phone number</label>
+                <input 
+                  id="alternativePhoneNumber" 
+                  v-model="alternativePhoneNumber" 
+                  type="tel" 
+                  placeholder="e.g. 9988776655"
+                  :disabled="isLoading"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="address">Address</label>
+                <input 
+                  id="address" 
+                  v-model="address" 
+                  type="text" 
+                  placeholder="e.g. 123 Main St, City"
+                  required
+                  :disabled="isLoading"
+                />
+              </div>
             </div>
           </transition>
 
@@ -971,12 +1025,18 @@ input.input-invalid {
 
 .expand-enter-to,
 .expand-leave-from {
-  max-height: 100px;
+  max-height: 500px;
   opacity: 1;
 }
 
 .expand-wrapper {
   transform-origin: top;
+}
+
+.staff-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* Styling for new Student columns (Class and Section dropdown selectors) */

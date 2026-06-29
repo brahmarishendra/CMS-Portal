@@ -9,6 +9,7 @@ import java.util.Optional;
  */
 public interface StudentService {
     Student registerStudent(Student student);
+    Student updateStudent(Student student, String updatedBy);
     Optional<Student> loginStudent(String email, String password);
     List<Student> getAllStudents();
 }

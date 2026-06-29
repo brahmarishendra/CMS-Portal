@@ -2,9 +2,9 @@ package com.example.SMS.pojo;
 
 // POJO Entity Class
 // Location: src/main/java/com/example/SMS/pojo/Student.java
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Table(name = "students")
@@ -19,6 +19,24 @@ public class Student {
     private String clasName;
     private String section;
     private String gender;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @Lob
+    @Column(name = "ProfileImage")
+    private byte[] profileImage;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     public Student() {}
 
@@ -48,6 +66,7 @@ public class Student {
     public void setSection(String section) {
         this.section = section;
     }
+
     public String getGender() {
         return gender;
     }
@@ -94,5 +113,45 @@ public class Student {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public byte[] getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(byte[] profileImage) {
+        this.profileImage = profileImage;
     }
 }

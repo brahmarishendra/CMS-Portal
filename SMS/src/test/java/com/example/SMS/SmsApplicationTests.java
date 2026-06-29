@@ -7,6 +7,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.util.Optional;
 
+import com.example.SMS.interfaces.StudentService;
+import com.example.SMS.interfaces.StaffService;
+import com.example.SMS.controllers.auth.AuthController;
+import com.example.SMS.controllers.user.UsersController;
+import com.example.SMS.pojo.Student;
+import com.example.SMS.pojo.Staff;
+import com.example.SMS.pojo.Users;
+import com.example.SMS.datasource.entitycustomclasses.customClasses.SignupRequest;
+import com.example.SMS.datasource.entitycustomclasses.customClasses.AuthRequest;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -81,7 +91,7 @@ class SmsApplicationTests {
     void testAuthControllerSignupAndLoginDirectly() {
         String testEmail = "auth.controller.test_" + System.currentTimeMillis() + "@example.com";
         
-        AuthController.SignupRequest signupRequest = new AuthController.SignupRequest();
+        SignupRequest signupRequest = new SignupRequest();
         signupRequest.setFirstName("Jane");
         signupRequest.setLastName("Smith");
         signupRequest.setEmail(testEmail);
@@ -96,7 +106,7 @@ class SmsApplicationTests {
         Student studentResult = (Student) signupResponse.getBody();
         assertEquals(testEmail, studentResult.getEmail());
 
-        AuthController.AuthRequest loginRequest = new AuthController.AuthRequest();
+        AuthRequest loginRequest = new AuthRequest();
         loginRequest.setEmail(testEmail);
         loginRequest.setPassword("studentPass123");
         loginRequest.setRole("STUDENT");
