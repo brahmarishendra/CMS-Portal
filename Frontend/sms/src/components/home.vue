@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Phone } from 'lucide-react'
+//import { Phone } from 'lucide-react'
 import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
@@ -24,8 +24,8 @@ const role = computed(() => {
 })
 
 
-// Tab navigation state: dashboard, results, fees, or salary
-const currentTab = ref<'dashboard' | 'results' | 'fees' | 'salary'>('dashboard')
+// Tab navigation state: dashboard, results, fees, salary, timetable, or attendance
+const currentTab = ref<'dashboard' | 'results' | 'fees' | 'salary' | 'timetable' | 'attendance'>('dashboard')
 
 // Compute username supporting both central Users (username) and legacy Student/Staff (firstName + lastName)
 const username = computed(() => {
@@ -672,6 +672,88 @@ watch(() => props.user, (newUser) => {
     fetchSalary()
   }
 }, { immediate: true })
+
+// Timetable Management State
+const selectedDay = ref<string>('Monday')
+const timetableDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const timetableSchedule = ref<Record<string, Array<{ time: string; subject: string; teacher: string; room: string; type: string; status: string }>>>({
+  Monday: [
+    { time: '08:30 AM - 09:30 AM', subject: 'Mathematics', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Lecture', status: 'Completed' },
+    { time: '09:30 AM - 10:30 AM', subject: 'Physics Lab', teacher: 'Prof. Sarah Jenkins', room: 'Lab 2', type: 'Practical', status: 'Ongoing' },
+    { time: '10:45 AM - 11:45 AM', subject: 'English Literature', teacher: 'Mrs. Emily Davis', room: 'Room 204', type: 'Lecture', status: 'Upcoming' },
+    { time: '11:45 AM - 12:45 PM', subject: 'Computer Science', teacher: 'Mr. Alex Turner', room: 'Lab 1', type: 'Practical', status: 'Upcoming' },
+    { time: '01:30 PM - 02:30 PM', subject: 'Chemistry', teacher: 'Dr. Alan Walker', room: 'Room 105', type: 'Lecture', status: 'Upcoming' }
+  ],
+  Tuesday: [
+    { time: '08:30 AM - 09:30 AM', subject: 'History', teacher: 'Mr. Michael Brown', room: 'Room 202', type: 'Lecture', status: 'Upcoming' },
+    { time: '09:30 AM - 10:30 AM', subject: 'Mathematics', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Lecture', status: 'Upcoming' },
+    { time: '10:45 AM - 11:45 AM', subject: 'Biology', teacher: 'Dr. Grace Hopper', room: 'Bio Lab', type: 'Practical', status: 'Upcoming' },
+    { time: '11:45 AM - 12:45 PM', subject: 'Physical Education', teacher: 'Coach Vance', room: 'Gymnasium', type: 'Activity', status: 'Upcoming' },
+    { time: '01:30 PM - 02:30 PM', subject: 'English Literature', teacher: 'Mrs. Emily Davis', room: 'Room 204', type: 'Lecture', status: 'Upcoming' }
+  ],
+  Wednesday: [
+    { time: '08:30 AM - 09:30 AM', subject: 'Computer Science', teacher: 'Mr. Alex Turner', room: 'Lab 1', type: 'Practical', status: 'Upcoming' },
+    { time: '09:30 AM - 10:30 AM', subject: 'Chemistry', teacher: 'Dr. Alan Walker', room: 'Room 105', type: 'Lecture', status: 'Upcoming' },
+    { time: '10:45 AM - 11:45 AM', subject: 'Physics', teacher: 'Prof. Sarah Jenkins', room: 'Room 302', type: 'Lecture', status: 'Upcoming' },
+    { time: '11:45 AM - 12:45 PM', subject: 'Mathematics', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Lecture', status: 'Upcoming' },
+    { time: '01:30 PM - 02:30 PM', subject: 'Social Studies', teacher: 'Mr. Michael Brown', room: 'Room 202', type: 'Lecture', status: 'Upcoming' }
+  ],
+  Thursday: [
+    { time: '08:30 AM - 09:30 AM', subject: 'Physics Lab', teacher: 'Prof. Sarah Jenkins', room: 'Lab 2', type: 'Practical', status: 'Upcoming' },
+    { time: '09:30 AM - 10:30 AM', subject: 'English Literature', teacher: 'Mrs. Emily Davis', room: 'Room 204', type: 'Lecture', status: 'Upcoming' },
+    { time: '10:45 AM - 11:45 AM', subject: 'Mathematics', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Lecture', status: 'Upcoming' },
+    { time: '11:45 AM - 12:45 PM', subject: 'Chemistry Lab', teacher: 'Dr. Alan Walker', room: 'Chem Lab', type: 'Practical', status: 'Upcoming' },
+    { time: '01:30 PM - 02:30 PM', subject: 'Art & Craft', teacher: 'Ms. Clara Oswald', room: 'Studio 1', type: 'Activity', status: 'Upcoming' }
+  ],
+  Friday: [
+    { time: '08:30 AM - 09:30 AM', subject: 'Mathematics', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Lecture', status: 'Upcoming' },
+    { time: '09:30 AM - 10:30 AM', subject: 'Computer Science', teacher: 'Mr. Alex Turner', room: 'Lab 1', type: 'Practical', status: 'Upcoming' },
+    { time: '10:45 AM - 11:45 AM', subject: 'Physics', teacher: 'Prof. Sarah Jenkins', room: 'Room 302', type: 'Lecture', status: 'Upcoming' },
+    { time: '11:45 AM - 12:45 PM', subject: 'History', teacher: 'Mr. Michael Brown', room: 'Room 202', type: 'Lecture', status: 'Upcoming' },
+    { time: '01:30 PM - 02:30 PM', subject: 'Weekly Assembly & Seminar', teacher: 'Dean Vance', room: 'Auditorium', type: 'Seminar', status: 'Upcoming' }
+  ],
+  Saturday: [
+    { time: '09:00 AM - 10:30 AM', subject: 'Extra Mathematics Tutorial', teacher: 'Dr. Robert Smith', room: 'Room 301', type: 'Tutorial', status: 'Upcoming' },
+    { time: '10:30 AM - 12:00 PM', subject: 'Sports Club & Athletics', teacher: 'Coach Vance', room: 'Sports Field', type: 'Activity', status: 'Upcoming' }
+  ]
+})
+
+// Attendance Management State
+const attendanceSummary = ref({
+  totalClasses: 120,
+  presentCount: 112,
+  absentCount: 5,
+  leaveCount: 3,
+  percentage: '93.3%'
+})
+
+const attendanceRecords = ref([
+  { date: '2026-06-26', day: 'Friday', subject: 'Mathematics', status: 'Present', remark: 'On Time' },
+  { date: '2026-06-26', day: 'Friday', subject: 'Computer Science', status: 'Present', remark: 'On Time' },
+  { date: '2026-06-25', day: 'Thursday', subject: 'Physics Lab', status: 'Present', remark: 'Experiment completed' },
+  { date: '2026-06-25', day: 'Thursday', subject: 'Chemistry Lab', status: 'Absent', remark: 'Medical Leave submitted' },
+  { date: '2026-06-24', day: 'Wednesday', subject: 'English Literature', status: 'Present', remark: 'On Time' },
+  { date: '2026-06-24', day: 'Wednesday', subject: 'Mathematics', status: 'Present', remark: 'On Time' },
+  { date: '2026-06-23', day: 'Tuesday', subject: 'History', status: 'Late', remark: '10 mins late' },
+  { date: '2026-06-22', day: 'Monday', subject: 'Physical Education', status: 'Present', remark: 'Active participation' }
+])
+
+// Staff Attendance Marker state
+const staffAttendanceList = ref([
+  { id: 101, name: 'Alex Johnson', rollNo: 'STU-101', status: 'Present' },
+  { id: 102, name: 'Emily Carter', rollNo: 'STU-102', status: 'Present' },
+  { id: 103, name: 'Liam Wilson', rollNo: 'STU-103', status: 'Absent' },
+  { id: 104, name: 'Sophia Martinez', rollNo: 'STU-104', status: 'Present' },
+  { id: 105, name: 'Noah Brown', rollNo: 'STU-105', status: 'Late' },
+  { id: 106, name: 'Olivia Davis', rollNo: 'STU-106', status: 'Present' }
+])
+
+const updateStudentAttendance = (studentId: number, status: string) => {
+  const student = staffAttendanceList.value.find(s => s.id === studentId)
+  if (student) {
+    student.status = status
+  }
+}
 </script>
 
 <template>
@@ -714,6 +796,20 @@ watch(() => props.user, (newUser) => {
           @click="currentTab = 'salary'"
         >
           Salary
+        </button>
+        <button 
+          class="nav-tab-btn" 
+          :class="{ active: currentTab === 'timetable' }" 
+          @click="currentTab = 'timetable'"
+        >
+          Time Table
+        </button>
+        <button 
+          class="nav-tab-btn" 
+          :class="{ active: currentTab === 'attendance' }" 
+          @click="currentTab = 'attendance'"
+        >
+          Attendance
         </button>
       </div>
       
@@ -1060,6 +1156,8 @@ watch(() => props.user, (newUser) => {
               Add Fee Record
             </button>
           </div>
+
+
 
           <!-- Alert Notifications -->
           <transition name="slide-fade">
@@ -1426,6 +1524,196 @@ watch(() => props.user, (newUser) => {
           </div>
         </div>
       </main>
+
+      <!-- TAB 5: TIMETABLE SECTION -->
+      <main v-else-if="currentTab === 'timetable'" class="tab-pane">
+        <div class="results-card">
+          <div class="results-card-header">
+            <div>
+              <h2>Class Schedule & Timetable Portal</h2>
+              <p v-if="role === 'STUDENT'">View your weekly class schedule, period timings, subjects, and classroom locations.</p>
+              <p v-else>Manage master academic timetables, view assigned periods, and monitor lecture status across classes.</p>
+            </div>
+          </div>
+
+          <!-- Day Selector Pills -->
+          <div class="day-selector-bar" style="display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; background: var(--bg-app); padding: 8px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+            <button 
+              v-for="day in timetableDays" 
+              :key="day" 
+              class="day-pill-btn" 
+              :class="{ active: selectedDay === day }"
+              @click="selectedDay = day"
+              style="padding: 8px 18px; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+            >
+              {{ day }}
+            </button>
+          </div>
+
+          <!-- Timetable Slots Table -->
+          <div v-if="timetableSchedule[selectedDay]?.length" class="table-wrapper">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Time Slot</th>
+                  <th>Subject</th>
+                  <th>Type</th>
+                  <th>Instructor</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(slot, index) in timetableSchedule[selectedDay]" :key="index">
+                  <td class="bold-td">{{ slot.time }}</td>
+                  <td>{{ slot.subject }}</td>
+                  <td>
+                    <span class="type-tag" style="font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: #e2e8f0; color: #475569;">{{ slot.type }}</span>
+                  </td>
+                  <td>{{ slot.teacher }}</td>
+                  <td>{{ slot.room }}</td>
+                  <td>
+                    <span 
+                      class="status-badge" 
+                      :class="{
+                        'pass': slot.status === 'Completed',
+                        'partial': slot.status === 'Ongoing',
+                        'fail': slot.status === 'Cancelled'
+                      }"
+                    >
+                      {{ slot.status }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-else class="center-state empty-state">
+            <p class="state-text">No classes scheduled for {{ selectedDay }}.</p>
+          </div>
+        </div>
+      </main>
+
+      <!-- TAB 6: ATTENDANCE SECTION -->
+      <main v-else-if="currentTab === 'attendance'" class="tab-pane">
+        <div class="results-card">
+          <div class="results-card-header">
+            <div>
+              <h2>Student Attendance Portal</h2>
+              <p v-if="role === 'STUDENT'">Track your cumulative academic attendance percentage, present days, and absence logs.</p>
+              <p v-else>Manage class roll-calls, mark daily student attendance statuses, and track attendance reports.</p>
+            </div>
+          </div>
+
+          <!-- STAFF ATTENDANCE MARKER REGISTER -->
+          <div v-if="role === 'STAFF'" style="margin-bottom: 32px; background: var(--bg-app); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 700;">Live Class Register - Mark Today's Attendance</h3>
+            <table class="premium-table" style="background: var(--bg-card);">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Attendance Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="student in staffAttendanceList" :key="student.id">
+                  <td class="bold-td">{{ student.rollNo }}</td>
+                  <td>{{ student.name }}</td>
+                  <td>
+                    <div style="display: flex; gap: 8px;">
+                      <button 
+                        type="button" 
+                        @click="updateStudentAttendance(student.id, 'Present')"
+                        :style="{
+                          padding: '6px 14px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          backgroundColor: student.status === 'Present' ? '#16a34a' : '#e2e8f0',
+                          color: student.status === 'Present' ? '#ffffff' : '#475569'
+                        }"
+                      >
+                        Present
+                      </button>
+                      <button 
+                        type="button" 
+                        @click="updateStudentAttendance(student.id, 'Absent')"
+                        :style="{
+                          padding: '6px 14px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          backgroundColor: student.status === 'Absent' ? '#dc2626' : '#e2e8f0',
+                          color: student.status === 'Absent' ? '#ffffff' : '#475569'
+                        }"
+                      >
+                        Absent
+                      </button>
+                      <button 
+                        type="button" 
+                        @click="updateStudentAttendance(student.id, 'Late')"
+                        :style="{
+                          padding: '6px 14px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          backgroundColor: student.status === 'Late' ? '#d97706' : '#e2e8f0',
+                          color: student.status === 'Late' ? '#ffffff' : '#475569'
+                        }"
+                      >
+                        Late
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- STUDENT ATTENDANCE LOG TABLE -->
+          <div class="table-wrapper">
+            <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 700;">Recent Attendance Log</h3>
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Day</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(log, i) in attendanceRecords" :key="i">
+                  <td>{{ log.date }}</td>
+                  <td>{{ log.day }}</td>
+                  <td class="bold-td">{{ log.subject }}</td>
+                  <td>
+                    <span 
+                      class="status-badge" 
+                      :class="{
+                        'pass': log.status === 'Present',
+                        'fail': log.status === 'Absent',
+                        'partial': log.status === 'Late'
+                      }"
+                    >
+                      {{ log.status }}
+                    </span>
+                  </td>
+                  <td>{{ log.remark }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+
 
     <!-- Student Profile Edit Modal -->
     <transition name="modal-fade">
@@ -2696,5 +2984,18 @@ watch(() => props.user, (newUser) => {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
+}
+
+.day-pill-btn {
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+}
+.day-pill-btn.active {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+.day-pill-btn:hover:not(.active) {
+  background-color: var(--primary-light);
+  color: var(--primary);
 }
 </style>
